@@ -126,6 +126,35 @@ class AnkiConnector:
         }
         return self._invoke(NoteEnum.DELETE_NOTES.value, **params)
 
+    def store_media_file(self, file_name, data=None, url=None):
+        params = {
+            "filename": file_name
+        }
+        if data and url:
+            raise Exception("Only data or url.")
+        elif data:
+            params["data"] = data
+        elif url:
+            params["url"] = url
+        else:
+            raise Exception("Insufficient data for media.")
+
+        return self._invoke(MediaEnum.STORE_MEDIA_FILE.value, **params)
+
+    def retrive_media_file(self, file_name):
+        params = {
+            "filename": file_name
+        }
+
+        return self._invoke(MediaEnum.RETRIEVE_MEDIA_FILE.value, **params)
+
+    def delete_media_file(self, file_name):
+        params = {
+            "filename": file_name
+        }
+
+        return self._invoke(MediaEnum.DELETE_MEDIA_FILE.value, **params)
+
 
 if __name__ == "__main__":
     c = AnkiConnector()
