@@ -9,7 +9,7 @@ class WordParser:
                                  help='Word need to be looked up and ankified.')
         self.args = None
 
-    def parse(self):
+    def _parse(self):
         self.args = self.parser.parse_args()
 
     def _process_word_args(self, word_array):
@@ -18,4 +18,6 @@ class WordParser:
         return full_word
 
     def get_word(self):
+        self._parse()
+
         return self._process_word_args(self.args.word)

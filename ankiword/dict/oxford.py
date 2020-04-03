@@ -15,7 +15,8 @@ class WordNotFound(Exception):
 
 class BlockAll(cookiejar.CookiePolicy):
     """ policy to block cookies """
-    return_ok = set_ok = domain_return_ok = path_return_ok = lambda self, *args, **kwargs: False
+    return_ok = set_ok = domain_return_ok = path_return_ok = lambda self, * \
+        args, **kwargs: False
     netscape = True
     rfc2965 = hide_cookie2 = False
 
@@ -34,10 +35,14 @@ class Word(object):
     br_pronounce_audio_selector = '[geo=br] [data-src-ogg]'
     am_pronounce_audio_selector = '[geo=n_am] [data-src-ogg]'
 
-    definition_body_selector = '.senses_multiple'
+    definition_body_selector = '.sense_single'
+    definitions_body_selector = '.senses_multiple'
+
     namespaces_selector = '.senses_multiple > .shcut-g'
     examples_selector = '.senses_multiple .sense > .examples .x'
+
     definitions_selector = '.senses_multiple .sense > .def'
+    definition_selector = '.sense_single .sense .def'
 
     extra_examples_selector = '.res-g [title="Extra examples"] .x-gs .x'
     phrasal_verbs_selector = '.phrasal_verb_links a'
@@ -68,7 +73,8 @@ class Word(object):
         req = requests.Session()
         req.cookies.set_policy(BlockAll())
 
-        page_html = req.get(cls.get_url(word), timeout=5, headers={'User-agent': 'mother animal'})
+        page_html = req.get(cls.get_url(word), timeout=5, headers={
+                            'User-agent': 'mother animal'})
         if page_html.status_code == 404:
             raise WordNotFound
         else:
@@ -103,7 +109,8 @@ class Word(object):
         info = []
 
         try:
-            rightcolumn_tags = cls.soup_data.select(cls.other_results_selector)[0]
+            rightcolumn_tags = cls.soup_data.select(
+                cls.other_results_selector)[0]
         except IndexError:
             return None
 
@@ -117,19 +124,23 @@ class Word(object):
             other_results = []
 
             for item_tag in other_results_tag.select('li'):
-                names = item_tag.select('span')[0].find_all(text=True, recursive=False)
+                names = item_tag.select('span')[0].find_all(
+                    text=True, recursive=False)
                 wordform_tag = item_tag.select('pos')
-                names.append(wordform_tag[0].text if len(wordform_tag) > 0 else '')
+                names.append(wordform_tag[0].text if len(
+                    wordform_tag) > 0 else '')
                 other_results.append(names)
 
-            other_results = list(filter(None, other_results))  # remove empty list
+            # remove empty list
+            other_results = list(filter(None, other_results))
             ids = [cls.extract_id(tag.attrs['href'])
                    for tag in other_results_tag.select('li a')]
 
             results = []
             for other_result, id in zip(other_results, ids):
                 result = {}
-                result['name'] = ' '.join(list(map(lambda x: x.strip(), other_result[0:-1])))
+                result['name'] = ' '.join(
+                    list(map(lambda x: x.strip(), other_result[0:-1])))
                 result['id'] = id
 
                 try:
@@ -202,8 +213,10 @@ class Word(object):
         america = {'prefix': None, 'ipa': None, 'url': None}
 
         try:
-            britain_pron_tag = cls.soup_data.select(cls.br_pronounce_selector)[0]
-            america_pron_tag = cls.soup_data.select(cls.am_pronounce_selector)[0]
+            britain_pron_tag = cls.soup_data.select(
+                cls.br_pronounce_selector)[0]
+            america_pron_tag = cls.soup_data.select(
+                cls.am_pronounce_selector)[0]
 
             britain['ipa'] = britain_pron_tag.text
             britain['prefix'] = 'BrE'
@@ -213,8 +226,10 @@ class Word(object):
             pass
 
         try:
-            britain['url'] = cls.soup_data.select(cls.br_pronounce_audio_selector)[0].attrs['data-src-ogg']
-            america['url'] = cls.soup_data.select(cls.am_pronounce_audio_selector)[0].attrs['data-src-ogg']
+            britain['url'] = cls.soup_data.select(cls.br_pronounce_audio_selector)[
+                0].attrs['data-src-ogg']
+            america['url'] = cls.soup_data.select(cls.am_pronounce_audio_selector)[
+                0].attrs['data-src-ogg']
         except IndexError:
             pass
 
@@ -267,7 +282,10 @@ class Word(object):
             return None
 
         if not full:
-            return [tag.text for tag in cls.soup_data.select(cls.definitions_selector)]
+            tags = cls.soup_data.select(cls.definitions_selector)
+            if not tags:
+                tags = cls.soup_data.select(cls.definition_selector)
+            return [tag.text for tag in tags]
         return cls.definition_full()
 
     @classmethod
@@ -286,7 +304,8 @@ class Word(object):
         phrasal_verbs = []
         for tag in cls.soup_data.select(cls.phrasal_verbs_selector):
             phrasal_verb = tag.select('.xh')[0].text
-            id = cls.extract_id(tag.attrs['href'])  # https://abc/definition/id -> id
+            # https://abc/definition/id -> id
+            id = cls.extract_id(tag.attrs['href'])
 
             phrasal_verbs.append({'name': phrasal_verb, 'id': id})
 
@@ -381,7 +400,10 @@ class Word(object):
         # no namespace. all definitions is global
         if len(info) == 0:
             info.append({'namespace': '__GLOBAL__', 'definitions': []})
-            def_body_tags = cls.soup_data.select(cls.definition_body_selector)
+            def_body_tags = cls.soup_data.select(cls.definitions_body_selector)
+            if len(def_body_tags) == 0:
+                def_body_tags = cls.soup_data.select(
+                    cls.definition_body_selector)
 
             definitions = []
             definition_full_tags = def_body_tags[0].select('.sense')
@@ -417,7 +439,8 @@ class Word(object):
             global_definition = {}
 
             try:  # label: (old-fashioned), (informal), (saying)...
-                global_definition['label'] = idiom_tag.select('.labels')[0].text
+                global_definition['label'] = idiom_tag.select('.labels')[
+                    0].text
             except IndexError:
                 pass
 
@@ -436,17 +459,20 @@ class Word(object):
                 definition = {}
 
                 try:  # sometimes, it just refers to other page without having a definition
-                    definition['description'] = definition_tag.select('.def')[0].text
+                    definition['description'] = definition_tag.select('.def')[
+                        0].text
                 except IndexError:
                     pass
 
                 try:  # label: (old-fashioned), (informal), (saying)...
-                    definition['label'] = definition_tag.select('.labels')[0].text
+                    definition['label'] = definition_tag.select('.labels')[
+                        0].text
                 except IndexError:
                     pass
 
                 try:  # refer to something (of people, of thing,...)
-                    definition['refer'] = definition_tag.select('.dis-g')[0].text
+                    definition['refer'] = definition_tag.select(
+                        '.dis-g')[0].text
                 except IndexError:
                     pass
 
@@ -454,10 +480,12 @@ class Word(object):
                 if not definition['references']:
                     definition.pop('references', None)
 
-                definition['examples'] = [example_tag.text for example_tag in definition_tag.select('.x')]
+                definition['examples'] = [
+                    example_tag.text for example_tag in definition_tag.select('.x')]
                 definitions.append(definition)
 
-            idioms.append({'name': idiom, 'summary': global_definition, 'definitions': definitions})
+            idioms.append(
+                {'name': idiom, 'summary': global_definition, 'definitions': definitions})
 
         return idioms
 

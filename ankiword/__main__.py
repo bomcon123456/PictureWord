@@ -1,11 +1,9 @@
-from .utils.parser import WordParser
+from .core.app import App
 
 
 def main():
-    word_parser = WordParser()
-
-    word_parser.parse()
-    print(word_parser.get_word())
+    app = App()
+    app.run()
 
 
 if __name__ == '__main__':
