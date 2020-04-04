@@ -156,7 +156,7 @@ class BingImageFetcher:
                 t.terminate()
 
         p = Path(self.output_dir)
-        return list(p.glob(word+'*'))
+        return list(map(lambda x: str(x.resolve()), p.glob(word+'*')))
 
 
 if __name__ == "__main__":
