@@ -43,6 +43,16 @@ class ImagePicker(tk.Frame):
         if self.current_page == 0:
             self.btn_prev["state"] = self.button_state_dict[False]
 
+    def _handle_hover_in(self, label_image):
+        if not label_image or not label_image.image:
+            return
+        label_image["relief"] = tk.RAISED
+
+    def _handle_hover_out(self, label_image):
+        if not label_image or not label_image.image:
+            return
+        label_image["relief"] = tk.FLAT
+
     def _handle_click_image(self, event, label_image):
         if not label_image or not label_image.image:
             return
@@ -65,7 +75,13 @@ class ImagePicker(tk.Frame):
                            padx=10, pady=10)
                 label.bind(
                     "<Button-1>",
-                    lambda e, image=label: self._handle_click_image(e, image))
+                    lambda e, image=label: self._handle_click_image(e, image)),
+                label.bind(
+                    "<Enter>",
+                    lambda e, image=label: self._handle_hover_in(image)),
+                label.bind(
+                    "<Leave>",
+                    lambda e, image=label: self._handle_hover_out(image))
                 self.img_list.append(label)
 
         # Side bar
