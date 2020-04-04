@@ -1,6 +1,7 @@
 from ankiword.utils.parser import WordParser
 import ankiword.dict.oxford as oxford
 from ankiword.utils.bing_image_fetcher import BingImageFetcher
+from ankiword.ui.image_picker import ImagePicker
 
 
 class App:
@@ -24,5 +25,8 @@ class App:
         print(pronounciations)
         print(examples)
 
-        self.fetcher.download_from_word(word_name)
-        print('niehehe')
+        my_array = self.fetcher.download_from_word(word_name)
+        app = ImagePicker(my_array)
+        app.run()
+        image_path = app.retrieve_result()
+        print(image_path)

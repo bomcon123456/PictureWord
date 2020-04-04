@@ -7,6 +7,7 @@ class ImagePicker():
     def __init__(self, img_array):
         self.window = None
         self.frame = None
+        self.image_array = img_array
 
     def run(self):
         window = tk.Tk()
@@ -17,7 +18,7 @@ class ImagePicker():
         window.rowconfigure(0, minsize=400, weight=1)
         window.columnconfigure(0, minsize=500, weight=1)
 
-        self.frame = ImagePickerFrame(window, img_array)
+        self.frame = ImagePickerFrame(window, self.image_array)
         self.frame.grid(column=0, row=0, sticky=("nsew"))
 
         window.mainloop()

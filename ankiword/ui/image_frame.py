@@ -10,7 +10,7 @@ class ImagePickerFrame(tk.Frame):
         1: "normal"
     }
 
-    def __init__(self, master=None, img_array=None, path='../data/imgs'):
+    def __init__(self, master=None, img_array=None):
         super().__init__(master)
         self.master = master
         self.result = None

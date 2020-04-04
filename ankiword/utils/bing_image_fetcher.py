@@ -1,17 +1,18 @@
 # Much of logic and code is from ostrolucky/Bulk-Bing-Image-downloader.
 # All I did is OOP and change a little bit so that it works on my situation.
 # Greatly thanks to you <3!
-
-import os
-from pathlib import Path
-import urllib.request
-import re
-import threading
-import posixpath
-import urllib.parse
-import hashlib
-import imghdr
 import multiprocessing
+import imghdr
+import hashlib
+import urllib.parse
+import posixpath
+import threading
+import re
+import urllib.request
+from pathlib import Path
+import os
+from . import __path__ as ROOT_PATH
+module_path = ROOT_PATH[0]
 
 
 class BingImageFetcher:
@@ -24,7 +25,7 @@ class BingImageFetcher:
         'Gecko/20100101 Firefox/60.0'
     }
 
-    def __init__(self, output_dir='../data/imgs', timeout=5):
+    def __init__(self, output_dir='{}/../data/imgs'.format(module_path), timeout=5):
         self.output_dir = output_dir
         self.timeout = timeout
 
