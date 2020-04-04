@@ -9,9 +9,7 @@ import re
 import threading
 import posixpath
 import urllib.parse
-import time
 import hashlib
-import pickle
 import imghdr
 import multiprocessing
 
@@ -157,9 +155,12 @@ class BingImageFetcher:
             if t.is_alive():
                 t.terminate()
 
+        p = Path(self.output_dir)
+        return list(p.glob(word+'*'))
+
 
 if __name__ == "__main__":
     fetcher = BingImageFetcher()
-    fetcher.download_from_word('kind', limit=50)
+    print(fetcher.download_from_word('kind', limit=50))
     # fetcher.download_from_word('apple', limit=50)
     # fetcher.download_from_word('tree', limit=50)
