@@ -1,3 +1,10 @@
 **/.vscode
 **/__pycache__
+**/bing
+
+*.jpg
+*.png
+*.jpeg
+*.gif
+
 ankiword.egg-info/
