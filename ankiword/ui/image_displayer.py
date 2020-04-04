@@ -1,5 +1,6 @@
 import tkinter as tk
 from PIL import Image, ImageTk
+from tkinter import messagebox as mb
 
 
 class ImagePicker(tk.Frame):
@@ -27,7 +28,29 @@ class ImagePicker(tk.Frame):
     def _handle_next(self):
         self.btn_prev["state"] = self.button_state_dict[True]
         self.current_page += 1
+        self.lbl_current["text"] = "Current Page: "+str(self.current_page + 1)
         self._create_image_grid()
+
+        if (self.current_page+1)*9 > len(self.array):
+            self.btn_next["state"] = self.button_state_dict[False]
+
+    def _handle_prev(self):
+        self.btn_next["state"] = self.button_state_dict[True]
+        self.current_page -= 1
+        self.lbl_current["text"] = "Current Page: "+str(self.current_page + 1)
+        self._create_image_grid()
+
+        if self.current_page == 0:
+            self.btn_prev["state"] = self.button_state_dict[False]
+
+    def _handle_click_image(self, event, label_image):
+        if not label_image or not label_image.image:
+            return
+        if mb.askyesno('Are you sure?',
+                       "Do you want to use this image for this word?"):
+            # Save the imagedata, pass it out to the others.
+            self.master.destroy()
+            pass
 
     def _initialize(self):
         # Main Components
@@ -37,15 +60,20 @@ class ImagePicker(tk.Frame):
         self.img_list = []
         for i in range(0, 3):
             for j in range(0, 3):
-                self.img_list.append(tk.Label(self.fr_images))
-                self.img_list[3*i+j].grid(row=i, column=j, sticky="nswe",
-                                          padx=10, pady=10)
+                label = tk.Label(self.fr_images)
+                label.grid(row=i, column=j, sticky="nswe",
+                           padx=10, pady=10)
+                label.bind(
+                    "<Button-1>",
+                    lambda e, image=label: self._handle_click_image(e, image))
+                self.img_list.append(label)
 
         # Side bar
         self.lbl_total_images = tk.Label(
             self.fr_sidebar, text="Total Images: {}".format(len(self.array)))
         self.lbl_current = tk.Label(
-            self.fr_sidebar, text="Current Page: {}".format(self.current_page))
+            self.fr_sidebar,
+            text="Current Page: {}".format(self.current_page + 1))
 
         self.btn_upload = tk.Button(self.fr_sidebar, text="Manual Upload")
         self.btn_close = tk.Button(
@@ -56,7 +84,8 @@ class ImagePicker(tk.Frame):
         init_next_state = self.button_state_dict[len(self.array) > 9]
         self.fr_prenev = tk.Frame(self.fr_sidebar)
         self.btn_prev = tk.Button(
-            self.fr_prenev, text="< Prev", state=init_prev_state)
+            self.fr_prenev, text="< Prev",
+            state=init_prev_state, command=self._handle_prev)
         self.btn_next = tk.Button(
             self.fr_prenev, text="> Next",
             state=init_next_state, command=self._handle_next)
@@ -87,6 +116,7 @@ class ImagePicker(tk.Frame):
     def _create_image_grid(self):
         current_index = (self.current_page)*9
         next_index = current_index + 9
+
         if next_index >= len(self.array):
             next_index = len(self.array)
         current_array = self.array[current_index:next_index]
