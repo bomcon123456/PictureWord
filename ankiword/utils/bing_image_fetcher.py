@@ -64,16 +64,18 @@ class BingImageFetcher:
             i = 0
             # If we see a file in folder has this name:
             # First we check whether it is the same image
-            # If not, add an index to the filename so that we can differentiate.
+            # If not, add index to the filename so that we can differentiate.
             # Else, we stop saving.
             full_path_to_file = os.path.join(self.output_dir, filename)
             while os.path.exists(full_path_to_file):
+
                 opened_image = open(full_path_to_file, 'rb')
                 if hashlib.md5(opened_image.read()).hexdigest() == md5_key:
                     print('Already downloaded ' + filename + ', not saving')
                     return
+                name, ext = filename.split('.')
                 i += 1
-                filename = "%s-%d%s" % (name, i, ext)
+                filename = "%s-%d.%s" % (name, i, ext)
 
             imagefile = open(full_path_to_file, 'wb')
             imagefile.write(image)
