@@ -1,9 +1,10 @@
 import tkinter as tk
 from PIL import Image, ImageTk
 from tkinter import messagebox as mb
+from tkinter.filedialog import askopenfilename
 
 
-class ImagePicker(tk.Frame):
+class ImagePickerFrame(tk.Frame):
     button_state_dict = {
         0: "disabled",
         1: "normal"
@@ -12,11 +13,7 @@ class ImagePicker(tk.Frame):
     def __init__(self, master=None, img_array=None, path='../data/imgs'):
         super().__init__(master)
         self.master = master
-
-        # TEST
-        img_array = ['/Volumes/Work/Workspace/Dict_To_Anki/ankiword/data/imgs/kind11.jpg', '/Volumes/Work/Workspace/Dict_To_Anki/ankiword/data/imgs/kind12.jpg', '/Volumes/Work/Workspace/Dict_To_Anki/ankiword/data/imgs/kind13.jpg', '/Volumes/Work/Workspace/Dict_To_Anki/ankiword/data/imgs/kind14.jpg', '/Volumes/Work/Workspace/Dict_To_Anki/ankiword/data/imgs/kind17.jpg', '/Volumes/Work/Workspace/Dict_To_Anki/ankiword/data/imgs/kind18.jpg', '/Volumes/Work/Workspace/Dict_To_Anki/ankiword/data/imgs/kind19.jpg', '/Volumes/Work/Workspace/Dict_To_Anki/ankiword/data/imgs/kind2.jpg', '/Volumes/Work/Workspace/Dict_To_Anki/ankiword/data/imgs/kind20.jpg',
-                     '/Volumes/Work/Workspace/Dict_To_Anki/ankiword/data/imgs/kind21.jpg', '/Volumes/Work/Workspace/Dict_To_Anki/ankiword/data/imgs/kind22.jpg', '/Volumes/Work/Workspace/Dict_To_Anki/ankiword/data/imgs/kind23.jpg', '/Volumes/Work/Workspace/Dict_To_Anki/ankiword/data/imgs/kind24.jpg', '/Volumes/Work/Workspace/Dict_To_Anki/ankiword/data/imgs/kind3.jpg', '/Volumes/Work/Workspace/Dict_To_Anki/ankiword/data/imgs/kind4.jpg', '/Volumes/Work/Workspace/Dict_To_Anki/ankiword/data/imgs/kind6.jpg', '/Volumes/Work/Workspace/Dict_To_Anki/ankiword/data/imgs/kind7.jpg', '/Volumes/Work/Workspace/Dict_To_Anki/ankiword/data/imgs/kind8.jpg', '/Volumes/Work/Workspace/Dict_To_Anki/ankiword/data/imgs/kind9.jpg']
-        # TEST
+        self.result = None
 
         self.array = img_array if img_array else []
 
@@ -24,6 +21,21 @@ class ImagePicker(tk.Frame):
         self._config()
         self._create_widgets()
         self.show()
+
+    def _open_file(self):
+        """Open a file for editing."""
+
+        # Cant work for Mac OS Catalina?
+        # When the box open, focus to another window then focus back to the dialog
+        filepath = askopenfilename(
+            filetypes=(("JPG File", "*.jpg"), ("JPEG File", "*.jpeg"), ("PNG File", "*.png")))
+
+        # Check if close dialog box or click cancel
+        if not filepath:
+            return
+
+        self.result = filepath
+        self.close()
 
     def _handle_next(self):
         self.btn_prev["state"] = self.button_state_dict[True]
@@ -59,8 +71,8 @@ class ImagePicker(tk.Frame):
         if mb.askyesno('Are you sure?',
                        "Do you want to use this image for this word?"):
             # Save the imagedata, pass it out to the others.
+            self.result = label_image.image_path
             self.master.destroy()
-            pass
 
     def _initialize(self):
         # Main Components
@@ -68,6 +80,7 @@ class ImagePicker(tk.Frame):
         self.fr_sidebar = tk.Frame(self)
         self.fr_images = tk.Frame(self, bg='white')
         self.img_list = []
+        # Create Image grid holder
         for i in range(0, 3):
             for j in range(0, 3):
                 label = tk.Label(self.fr_images)
@@ -91,9 +104,10 @@ class ImagePicker(tk.Frame):
             self.fr_sidebar,
             text="Current Page: {}".format(self.current_page + 1))
 
-        self.btn_upload = tk.Button(self.fr_sidebar, text="Manual Upload")
+        self.btn_upload = tk.Button(
+            self.fr_sidebar, text="Manual Upload", command=self._open_file)
         self.btn_close = tk.Button(
-            self.fr_sidebar, text="Close")
+            self.fr_sidebar, text="Close", command=self.close)
 
         # Prev Next for sidebar
         init_prev_state = "disable"
@@ -142,12 +156,16 @@ class ImagePicker(tk.Frame):
                 index = i*3 + j
                 if index >= len(current_array):
                     tkimage = None
+                    img_path = None
                 else:
-                    im = Image.open(current_array[index])
+                    img_path = current_array[index]
+                    im = Image.open(img_path)
                     resized = im.resize((150, 150), Image.ANTIALIAS)
                     tkimage = ImageTk.PhotoImage(resized)
+
                 self.img_list[index].configure(image=tkimage)
                 self.img_list[index].image = tkimage
+                self.img_list[index].image_path = img_path
 
     def _create_widgets(self):
         self._create_sidebar()
@@ -157,6 +175,12 @@ class ImagePicker(tk.Frame):
         self.fr_sidebar.grid(row=0, column=0, sticky="ns")
         # self.txt_edit.grid(row=0, column=1, sticky="nsew")
         self.fr_images.grid(row=0, column=1, sticky="nsew")
+
+    def close(self):
+        self.master.destroy()
+
+    def get_image(self):
+        return self.result
 
 
 if __name__ == "__main__":
@@ -168,8 +192,9 @@ if __name__ == "__main__":
     window.rowconfigure(0, minsize=400, weight=1)
     window.columnconfigure(0, minsize=500, weight=1)
 
-    app = ImagePicker(window)
+    app = ImagePickerFrame(window)
     # app.pack(fill=tk.BOTH, expand=1)
     app.grid(column=0, row=0, sticky=("nsew"))
 
-window.mainloop()
+    window.mainloop()
+    print('hello')
