@@ -1,7 +1,6 @@
 # Much of logic and code is from ostrolucky/Bulk-Bing-Image-downloader.
 # All I did is OOP and change a little bit so that it works on my situation.
 # Greatly thanks to you <3!
-import multiprocessing
 import imghdr
 import hashlib
 import urllib.parse
@@ -29,7 +28,8 @@ class BingImageFetcher:
         self.output_dir = output_dir
         self.timeout = timeout
 
-    def get_filename_from_url(self, url, save_name):
+    @staticmethod
+    def get_filename_from_url(url, save_name):
         path = urllib.parse.urlsplit(url).path
         filename = posixpath.basename(path)\
             .split('?')[0]  # Strip GET parameters from filename
@@ -40,9 +40,10 @@ class BingImageFetcher:
 
         return save_name + ext
 
-    def _download_img_read_md5(self, url, filename):
+    @classmethod
+    def _download_img_read_md5(cls, url, filename):
         # Get image data buffer
-        request = urllib.request.Request(url, None, self.urlopenheader)
+        request = urllib.request.Request(url, None, cls.urlopenheader)
         image = urllib.request.urlopen(request).read()
         # Check if the buffer is an image
         if not imghdr.what(None, image):
@@ -52,20 +53,21 @@ class BingImageFetcher:
         md5_key = hashlib.md5(image).hexdigest()
         return image, md5_key
 
-    def _download(self, pool_sema: threading.Semaphore,
-                  url: str, save_name: str):
+    @classmethod
+    def _download(cls, pool_sema: threading.Semaphore,
+                  url: str, save_name: str, output_dir: str):
 
         pool_sema.acquire()
-        filename = self.get_filename_from_url(url, save_name)
+        filename = cls.get_filename_from_url(url, save_name)
         try:
-            image, md5_key = self._download_img_read_md5(url, filename)
+            image, md5_key = cls._download_img_read_md5(url, filename)
 
             i = 0
             # If we see a file in folder has this name:
             # First we check whether it is the same image
             # If not, add index to the filename so that we can differentiate.
             # Else, we stop saving.
-            full_path_to_file = os.path.join(self.output_dir, filename)
+            full_path_to_file = os.path.join(output_dir, filename)
             while os.path.exists(full_path_to_file):
 
                 opened_image = open(full_path_to_file, 'rb')
@@ -85,18 +87,19 @@ class BingImageFetcher:
         finally:
             pool_sema.release()
 
-    def _get_bing_url(self, keyword, current, adlt, filters):
+    @classmethod
+    def _get_bing_url(cls, keyword, current, adlt, filters):
         # Return the url as this example:
         # https://www.bing.com/images/async?q="apple"&first=10&count=35&adlt=1&qft=''
         if not filters:
             filters = ''
-        request_url = self.async_bing_url + \
+        request_url = cls.async_bing_url + \
             urllib.parse.quote_plus(keyword) + '&first=' + \
             str(current) + '&count=35&adlt=' + adlt + \
             '&qft=' + filters
 
         request = urllib.request.Request(
-            request_url, None, headers=self.urlopenheader)
+            request_url, None, headers=cls.urlopenheader)
         response = urllib.request.urlopen(request)
 
         # Scrape from HTML links to images
@@ -123,10 +126,12 @@ class BingImageFetcher:
                 for index, link in enumerate(links):
                     if limit is not None and current + index >= limit:
                         return threads_arr
-                    t = multiprocessing.Process(target=self._download, args=(
-                        pool_sema, link, keyword+str(index)))
-                    threads_arr.append(t)
+                    t_event = threading.Event()
+                    t = threading.Thread(target=self._download, args=(
+                        pool_sema, link, keyword+str(index), out_dir))
                     current += 1
+                    t.start()
+                    threads_arr.append((t, t_event))
                 last = links[-1]
 
             except IndexError:
@@ -137,30 +142,38 @@ class BingImageFetcher:
                            adult=True, filters=None):
 
         word = word.strip().lower()
+        output_dir = self.output_dir + '/' + word
 
-        if not os.path.exists(self.output_dir):
-            os.makedirs(self.output_dir)
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+
         pool_sema = threading.BoundedSemaphore(threads)
 
         print('Starting fetching')
         adult = '' if adult else 'off'
         th = self._fetch_images_from_keyword(
-            pool_sema, word, adult, limit)
+            pool_sema, word, adult, limit, out_dir=output_dir)
 
-        for t in th:
-            t.start()
-
-        for t in th:
-            t.join(timeout=self.timeout)
+        for t, t_event in th:
+            t.join(self.timeout)
 
             if t.is_alive():
-                t.terminate()
+                print('Thread not done, setting to kill.')
+                t_event.set()
+            else:
+                print("Thread finished")
+  
+            t.join()
 
-        p = Path(self.output_dir)
+        p = Path(output_dir)
         return list(map(lambda x: str(x.resolve()), p.glob(word+'*')))
 
 
 if __name__ == "__main__":
+    import socket
+
+    socket.setdefaulttimeout(2)
+
     fetcher = BingImageFetcher()
     print(fetcher.download_from_word('kind', limit=50))
     # fetcher.download_from_word('apple', limit=50)

@@ -1,5 +1,4 @@
 from .core.app import App
-from google_images_download import google_images_download
 
 import socket
 socket.setdefaulttimeout(2)
