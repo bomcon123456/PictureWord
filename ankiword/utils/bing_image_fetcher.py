@@ -162,7 +162,7 @@ class BingImageFetcher:
                 t_event.set()
             else:
                 print("Thread finished")
-  
+
             t.join()
 
         p = Path(output_dir)
