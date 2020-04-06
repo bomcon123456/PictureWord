@@ -1,7 +1,8 @@
 **/.vscode
 **/__pycache__
 **/bing
-**/test.*
+
+test*
 
 *.jpg
 *.png

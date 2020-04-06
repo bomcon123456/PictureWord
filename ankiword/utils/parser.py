@@ -1,7 +1,7 @@
 import argparse
 
 
-class WordParser:
+class ArgsParser:
     def __init__(self):
         self.parser = argparse.ArgumentParser(
             description='Word Look-up and Ankifying.')
