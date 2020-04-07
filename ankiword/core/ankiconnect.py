@@ -2,6 +2,8 @@ import json
 import urllib.request
 from enum import Enum
 import base64
+from io import BytesIO
+from PIL import Image
 
 
 class DeckEnum(Enum):
@@ -158,30 +160,38 @@ class AnkiConnector:
 
     @staticmethod
     def convert_image_to_base64(image_src):
-        with open(image_src, "rb") as image:
-            result = base64.b64encode(image.read())
-        return result
+        img = Image.open(image_src)
+        img = img.convert("RGB")
+        img = img.resize((224, 244))
+        buffered = BytesIO()
+        img.save(buffered, format="JPEG")
+        return "data:image/jpeg;base64,"+base64.b64encode(buffered.getvalue()).decode()
 
+        # if __name__ == "__main__":
+        #     c = AnkiConnector()
+        #     params = {
+        #         "note": {
+        #             "deckName": "test",
+        #             "modelName": "2. Picture Words",
+        #             "fields": {
+        #                 "Word": "Test",
+        #                 "Picture": '<img src="paste-5093831213178.jpg">',
+        #                 "Gender, Personal Connection, Extra Info (Back side)": "nope",
+        #                 "Pronunciation (Recording and/or IPA)": "/asd",
+        #                 "Test Spelling? (y = yes, blank = no)": "y"
+        #             },
+        #             "options": {
+        #                 "allowDuplicate": False
+        #             },
+        #             "tags": [],
+        #             "audio": []
+        #         }
+        #     }
+        #     res = c._invoke(NoteEnum.ADD_NOTE.value, **params)
+        #     print(res)
 
-if __name__ == "__main__":
-    c = AnkiConnector()
-    params = {
-        "note": {
-            "deckName": "test",
-            "modelName": "2. Picture Words",
-            "fields": {
-                "Word": "Test",
-                "Picture": '<img src="paste-5093831213178.jpg">',
-                "Gender, Personal Connection, Extra Info (Back side)": "nope",
-                "Pronunciation (Recording and/or IPA)": "/asd",
-                "Test Spelling? (y = yes, blank = no)": "y"
-            },
-            "options": {
-                "allowDuplicate": False
-            },
-            "tags": [],
-            "audio": []
-        }
-    }
-    res = c.invoke(NoteEnum.ADD_NOTE.value, **params)
-    print(res)
+        # if __name__ == '__main__':
+        # ac = AnkiConnector()
+        # res = ac.store_media_file(
+        #     'fall_test.ogg', url='https://www.oxfordlearnersdictionaries.com/media/english/uk_pron_ogg/f/fal/fall_/fall__gb_2.ogg')
+        # print(res)

@@ -1,13 +1,14 @@
+import sys
+from os import system, name
+import json
+import socket
+
 from ankiword.core.ankiconnect import AnkiConnector
 from ankiword.ui.image_picker import ImagePicker
 from ankiword.utils.bing_image_fetcher import BingImageFetcher
 import ankiword.dict.oxford as oxford
 from ankiword.utils.parser import ArgsParser
-import sys
-from os import system, name
-import json
-import socket
-socket.setdefaulttimeout(2)
+from ankiword.models.PictureWordModel import PictureWordModel
 
 
 def pretty_print_dict(d):
@@ -74,6 +75,10 @@ class App:
         n = self.print_property("exm")
         self.pick_property("exm", n)
         self.print_UI()
+
+    def pick_name(self, _type="mdl"):
+        n = self.print_property(_type)
+        self.pick_property(_type, n)
 
     def get_current_definition(self):
         return self.get_definitions()[self.current_def_index]
@@ -164,6 +169,7 @@ class App:
         n = self.get_int_input(1, back_index)
         # n is zero-based
         if n == back_index-1:
+            print(callbacks[prop])
             callbacks[prop]()
         elif prop == "def":
             self.current_def_index = n
@@ -244,21 +250,16 @@ class App:
 
     def pick_image(self):
         if not self.image_array:
+            socket.setdefaulttimeout(2)
             img_fetcher = BingImageFetcher()
             img_array = img_fetcher.download_from_word(self.word)
             print('Download finished.')
             print('Opening window to choose image...')
+            socket.setdefaulttimeout(None)
 
         img_picker = ImagePicker(img_array)
         img_picker.run()
         self.image_url = img_picker.retrieve_result()
-
-    # def print_anki_models(self):
-    #     mdls = self.anki_connector.get_models()
-    #     names = mdls.keys()
-    #     names.
-    #     for i in range(len(names)):
-    #         print('{0}. {1}'.format(i+1, names[i]))
 
     def print_anki_decks(self):
         mdls = self.anki_connector.get_decks()
@@ -281,8 +282,32 @@ class App:
         if action in ["mdl", "dck"]:
             n = self.print_property(action)
             self.pick_property(action, n)
+            self.print_anki()
         elif action == "uld":
-            pass
+
+            if self.image_url:
+                img_filename = '_'+self.image_url.split('/')[-1]
+                base64_img = self.anki_connector.convert_image_to_base64(
+                    self.image_url)
+                print('Uploading picture to storage...')
+                print(self.anki_connector.store_media_file(
+                    img_filename, data=base64_img))
+
+            if self.get_current_pronunciation():
+                sound_url = self.get_current_pronunciation()["url"]
+                audio_filename = '_' + sound_url.split('/')[-1]
+                print('Uploading audio to storage...')
+                print(self.anki_connector.store_media_file(
+                    audio_filename, sound_url))
+
+            note = PictureWordModel(self.word, self.get_current_definition(
+            ), self.get_current_pronunciation(), audio_filename, img_filename)
+            print(self.anki_connector.add_note(
+                self.anki_deck_names[self.anki_deck_name_index],
+                self.anki_deck_names[self.anki_model_name_index],
+                note.get_fields()))
+            input()
+
         else:
             self.print_UI()
 

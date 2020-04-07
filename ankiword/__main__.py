@@ -1,8 +1,5 @@
 from .core.app import App
 
-import socket
-socket.setdefaulttimeout(2)
-
 
 def main():
     app = App()
