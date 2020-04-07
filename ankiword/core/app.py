@@ -23,6 +23,7 @@ class App:
         self.word = None
         self.word_info = None
         self.definitions = None
+        self.image_array = None
 
         # Pick the first defintion and its first example
         self.current_def_index = 0
@@ -126,7 +127,6 @@ class App:
             if isinstance(p, dict):
                 p = p["prefix"]
             print('{0}. {1}'.format(i+1, p))
-        # print('Options[1-{}]: '.format(i+1), end=' ')
 
         return i+1
 
@@ -208,9 +208,22 @@ class App:
         elif action == "prn":
             n = self.print_property("prn")
             self.pick_property("prn", n)
+        elif action == "img":
+            self.pick_image()
         elif action == "ext":
             self.stop()
         self.print_UI()
+
+    def pick_image(self):
+        if not self.image_array:
+            img_fetcher = BingImageFetcher()
+            img_array = img_fetcher.download_from_word(self.word)
+            print('Download finished.')
+            print('Opening window to choose image...')
+
+        img_picker = ImagePicker(img_array)
+        img_picker.run()
+        self.image_url = img_picker.retrieve_result()
 
 
 if __name__ == "__main__":

@@ -81,9 +81,10 @@ class BingImageFetcher:
             imagefile = open(full_path_to_file, 'wb')
             imagefile.write(image)
             imagefile.close()
-            print("File downloaded: " + filename)
+            # print("File downloaded: " + filename)
         except Exception:
-            print("Fail to download: " + filename)
+            # print("Fail to download: " + filename)
+            pass
         finally:
             pool_sema.release()
 
@@ -149,7 +150,7 @@ class BingImageFetcher:
 
         pool_sema = threading.BoundedSemaphore(threads)
 
-        print('Starting fetching')
+        print('Downloading...')
         adult = '' if adult else 'off'
         th = self._fetch_images_from_keyword(
             pool_sema, word, adult, limit, out_dir=output_dir)
@@ -158,10 +159,11 @@ class BingImageFetcher:
             t.join(self.timeout)
 
             if t.is_alive():
-                print('Thread not done, setting to kill.')
+                # print('Thread not done, setting to kill.')
                 t_event.set()
             else:
-                print("Thread finished")
+                # print("Thread finished")
+                pass
 
             t.join()
 
