@@ -36,9 +36,9 @@ class App:
         n = -1
         while True:
             try:
-                n = int(input())
+                n = int(input('Option[1-{0}]: '.format(higher)))
                 if n < lower or n > higher:
-                    raise
+                    raise ValueError
                 n -= 1
                 return n
             except ValueError:
@@ -121,8 +121,12 @@ class App:
         for i in range(len(array)):
             if i == current_opt["idx"]:
                 print('*', end=' ')
-            print('{0}. {1}'.format(i+1, array[i]))
-        print('Options[1-{}]: '.format(i+1), end=' ')
+            p = array[i]
+            # print(p)
+            if isinstance(p, dict):
+                p = p["prefix"]
+            print('{0}. {1}'.format(i+1, p))
+        # print('Options[1-{}]: '.format(i+1), end=' ')
 
         return i+1
 
@@ -188,24 +192,25 @@ class App:
             options.insert(0, ("prn", "Change pronunciation speaker"))
         if def_length > 1:
             options.insert(0, ("def", "See other definitions"))
+        if not self.image_url:
+            options.insert(-2, ("img", "Add picture for word"))
 
         for i in range(len(options)):
             print("{0}. {1}".format(i+1, options[i][1]))
-        print('Option [1-4]: ', end='')
 
-        n = self.get_int_input(1, 4)
+        n = self.get_int_input(1, len(options))
         action = options[n][0]
         if action == "def":
             n = self.print_property("def")
             self.pick_property("def", n)
             n = self.print_property("exm")
             self.pick_property("exm", n)
-            self.print_UI()
         elif action == "prn":
-            self.print_property("prn")
-            self.pick_pronun()
+            n = self.print_property("prn")
+            self.pick_property("prn", n)
         elif action == "ext":
             self.stop()
+        self.print_UI()
 
 
 if __name__ == "__main__":
