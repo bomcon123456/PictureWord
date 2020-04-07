@@ -10,8 +10,9 @@ import re
 import urllib.request
 from pathlib import Path
 import os
-from . import __path__ as ROOT_PATH
-module_path = ROOT_PATH[0]
+# from . import __path__ as ROOT_PATH
+# module_path = ROOT_PATH[0]
+module_path = '.'
 
 
 class BingImageFetcher:
@@ -28,6 +29,9 @@ class BingImageFetcher:
         self.output_dir = output_dir
         self.timeout = timeout
 
+        self.image_md5s = {}
+        self.in_progress = 0
+
     @staticmethod
     def get_filename_from_url(url, save_name):
         path = urllib.parse.urlsplit(url).path
@@ -38,7 +42,7 @@ class BingImageFetcher:
         if not ext:
             ext = '.jpg'
 
-        return save_name + ext
+        return save_name + ext[:4]
 
     @classmethod
     def _download_img_read_md5(cls, url, filename):
@@ -53,31 +57,25 @@ class BingImageFetcher:
         md5_key = hashlib.md5(image).hexdigest()
         return image, md5_key
 
-    @classmethod
-    def _download(cls, pool_sema: threading.Semaphore,
+    def _download(self, pool_sema: threading.Semaphore,
                   url: str, save_name: str, output_dir: str):
 
         pool_sema.acquire()
-        filename = cls.get_filename_from_url(url, save_name)
+        self.in_progress += 1
+
+        filename = self.get_filename_from_url(url, save_name)
         try:
-            image, md5_key = cls._download_img_read_md5(url, filename)
-
-            i = 0
-            # If we see a file in folder has this name:
-            # First we check whether it is the same image
-            # If not, add index to the filename so that we can differentiate.
-            # Else, we stop saving.
-            full_path_to_file = os.path.join(output_dir, filename)
-            while os.path.exists(full_path_to_file):
+            image, md5_key = self._download_img_read_md5(url, filename)
+            if md5_key in self.image_md5s:
+                print('Image is a duplicate of ' +
+                      self.image_md5s[md5_key] + ', not saving ' + filename)
                 return
-                # opened_image = open(full_path_to_file, 'rb')
-                # if hashlib.md5(opened_image.read()).hexdigest() == md5_key:
-                #     print('Already downloaded ' + filename + ', not saving')
-                #     return
-                # name, ext = filename.split('.')
-                # i += 1
-                # filename = "%s-%d.%s" % (name, i, ext)
+            elif os.path.exists(os.path.join(output_dir, filename)):
+                return
 
+            self.image_md5s[md5_key] = filename
+
+            full_path_to_file = os.path.join(output_dir, filename)
             imagefile = open(full_path_to_file, 'wb')
             imagefile.write(image)
             imagefile.close()
@@ -87,6 +85,7 @@ class BingImageFetcher:
             pass
         finally:
             pool_sema.release()
+            self.in_progress -= 1
 
     @classmethod
     def _get_bing_url(cls, keyword, current, adlt, filters):
@@ -116,6 +115,9 @@ class BingImageFetcher:
         current = 0
         last = ''
         while True:
+            if self.in_progress > 10:
+                continue
+
             links = self._get_bing_url(keyword, current, adlt, filters)
             threads_arr = []
             try:
@@ -177,6 +179,6 @@ if __name__ == "__main__":
     socket.setdefaulttimeout(2)
 
     fetcher = BingImageFetcher()
-    print(fetcher.download_from_word('kind', limit=50))
+    print(fetcher.download_from_word('fall', limit=100))
     # fetcher.download_from_word('apple', limit=50)
     # fetcher.download_from_word('tree', limit=50)
