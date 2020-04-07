@@ -1,6 +1,7 @@
 import json
 import urllib.request
 from enum import Enum
+import base64
 
 
 class DeckEnum(Enum):
@@ -49,7 +50,7 @@ class AnkiConnector:
             'version': self.anki_connect_version
         }
 
-    def invoke(self, action, **params):
+    def _invoke(self, action, **params):
         requestJson = json.dumps(self._request(
             action, **params)).encode('utf-8')
         response = json.load(urllib.request.urlopen(
@@ -154,6 +155,12 @@ class AnkiConnector:
         }
 
         return self._invoke(MediaEnum.DELETE_MEDIA_FILE.value, **params)
+
+    @staticmethod
+    def convert_image_to_base64(image_src):
+        with open(image_src, "rb") as image:
+            result = base64.b64encode(image.read())
+        return result
 
 
 if __name__ == "__main__":

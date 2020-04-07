@@ -1,11 +1,13 @@
+from ankiword.core.ankiconnect import AnkiConnector
+from ankiword.ui.image_picker import ImagePicker
+from ankiword.utils.bing_image_fetcher import BingImageFetcher
+import ankiword.dict.oxford as oxford
+from ankiword.utils.parser import ArgsParser
 import sys
 from os import system, name
 import json
-
-from ankiword.utils.parser import ArgsParser
-import ankiword.dict.oxford as oxford
-from ankiword.utils.bing_image_fetcher import BingImageFetcher
-from ankiword.ui.image_picker import ImagePicker
+import socket
+socket.setdefaulttimeout(2)
 
 
 def pretty_print_dict(d):
@@ -16,7 +18,9 @@ class App:
 
     def __init__(self):
         self.args_parser = ArgsParser()
-        self.fetcher = BingImageFetcher()
+        self.anki_connector = AnkiConnector()
+        self.anki_deck_names = list(self.anki_connector.get_decks().keys())
+        self.anki_model_names = list(self.anki_connector.get_models().keys())
 
         # Cached info so that user can change option if they want.
         # Since Word doesn't cache itself but parse the soup_data everytime
@@ -28,8 +32,10 @@ class App:
         # Pick the first defintion and its first example
         self.current_def_index = 0
         self.current_example_index = 0
-        # Pick american pronounciation first.
+        # Pick American pronounciation first.
         self.current_pronunciation_index = 1
+        self.anki_deck_name_index = 0
+        self.anki_model_name_index = 0
         self.image_url = None
 
     @classmethod
@@ -92,23 +98,34 @@ class App:
                 entry))
         return self.definitions
 
-    def print_property(self, prop, pick=False):
+    def print_property(self, prop):
         print_dict_option = {
             "prn": {
                 "txt": "Pronunciations",
                 "func": self.get_pronunciations,
                 "idx": self.current_pronunciation_index,
-                "cb": self.print_UI},
+                "cb": self.print_UI
+            },
             "def": {
                 "txt": "Definitions",
                 "func": self.get_definitions,
                 "idx": self.current_def_index,
-                "cb": self.print_UI},
-
+                "cb": self.print_UI
+            },
             "exm": {
                 "txt": "Examples",
                 "func": self.get_examples_of_definitions,
-                "idx": self.current_example_index}
+                "idx": self.current_example_index
+            },
+            "mdl": {
+                "txt": "Model Names:",
+                "data": self.anki_model_names,
+                "idx": self.anki_model_name_index},
+            "dck": {
+                "txt": "Deck Names:",
+                "data": self.anki_deck_names,
+                "idx": self.anki_deck_name_index
+            }
         }
 
         current_opt = print_dict_option[prop]
@@ -116,7 +133,10 @@ class App:
         print('Your word: "{}"'.format(self.word.capitalize()))
         print('{}:'.format(current_opt["txt"]))
         print()
-        array = current_opt["func"]().copy()
+        if "data" not in current_opt.keys():
+            array = current_opt["func"]().copy()
+        else:
+            array = current_opt["data"].copy()
         array.append("Back")
 
         for i in range(len(array)):
@@ -137,7 +157,9 @@ class App:
         callbacks = {
             "exm": self.pick_definition,
             "def": self.print_UI,
-            "prn": self.print_UI
+            "prn": self.print_UI,
+            "mdl": self.print_anki,
+            "dck": self.print_anki
         }
         n = self.get_int_input(1, back_index)
         # n is zero-based
@@ -151,6 +173,10 @@ class App:
             self.current_pronunciation_index = n
         elif prop == "exm":
             self.current_example_index = n
+        elif prop == "dck":
+            self.anki_deck_name_index = n
+        elif prop == "mdl":
+            self.anki_model_name_index = n
 
     def get_pronunciations(self):
         return self.word_info["pronunciations"]
@@ -212,6 +238,8 @@ class App:
             self.pick_image()
         elif action == "ext":
             self.stop()
+        elif action == "sav":
+            self.print_anki()
         self.print_UI()
 
     def pick_image(self):
@@ -224,6 +252,39 @@ class App:
         img_picker = ImagePicker(img_array)
         img_picker.run()
         self.image_url = img_picker.retrieve_result()
+
+    # def print_anki_models(self):
+    #     mdls = self.anki_connector.get_models()
+    #     names = mdls.keys()
+    #     names.
+    #     for i in range(len(names)):
+    #         print('{0}. {1}'.format(i+1, names[i]))
+
+    def print_anki_decks(self):
+        mdls = self.anki_connector.get_decks()
+        names = mdls.keys()
+        for i in range(len(names)):
+            print('{0}. {1}'.format(i+1, names[i]))
+
+    def print_anki(self):
+        self.clear()
+        print('Current model name:',
+              self.anki_model_names[self.anki_model_name_index])
+        print('Current deck name:',
+              self.anki_deck_names[self.anki_deck_name_index])
+        options = [("mdl", "Choose model name"), ("dck", "Choose card name"),
+                   ("uld", "Upload note to anki"), ("bck", "Back")]
+        for i in range(len(options)):
+            print('{0}. {1}'.format(i+1, options[i][1]))
+        n = self.get_int_input(1, i+1)
+        action = options[n][0]
+        if action in ["mdl", "dck"]:
+            n = self.print_property(action)
+            self.pick_property(action, n)
+        elif action == "uld":
+            pass
+        else:
+            self.print_UI()
 
 
 if __name__ == "__main__":
