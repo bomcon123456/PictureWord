@@ -41,7 +41,7 @@ class Word(object):
     namespaces_selector = '.senses_multiple > .shcut-g'
     examples_selector = '.senses_multiple .sense > .examples .x'
 
-    definitions_selector = '.senses_multiple .sense > .def'
+    definitions_selector = '.senses_multiple .sense .def'
     definition_selector = '.sense_single .sense .def'
 
     extra_examples_selector = '.res-g [title="Extra examples"] .x-gs .x'
@@ -283,6 +283,7 @@ class Word(object):
 
         if not full:
             tags = cls.soup_data.select(cls.definitions_selector)
+            print(tags)
             if not tags:
                 tags = cls.soup_data.select(cls.definition_selector)
             return [tag.text for tag in tags]

@@ -10,9 +10,8 @@ import re
 import urllib.request
 from pathlib import Path
 import os
-# from . import __path__ as ROOT_PATH
-# module_path = ROOT_PATH[0]
-module_path = '.'
+from . import __path__ as ROOT_PATH
+module_path = ROOT_PATH[0]
 
 
 class BingImageFetcher:

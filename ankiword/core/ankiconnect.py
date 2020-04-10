@@ -113,13 +113,13 @@ class AnkiConnector:
             "note": {
                 "deckName": deck_name,
                 "modelName": model_name,
-                "fields": fields
-            },
-            "options": {
-                "allowDuplicate": False
-            },
-            "tags": [] if tags is None else tags,
-            "audio": [] if audio is None else audio
+                "fields": fields,
+                "options": {
+                    "allowDuplicate": False
+                },
+                "tags": [] if tags is None else tags,
+                "audio": [] if audio is None else audio
+            }
         }
         return self._invoke(NoteEnum.ADD_NOTE.value, **params)
 
@@ -141,7 +141,7 @@ class AnkiConnector:
             params["url"] = url
         else:
             raise Exception("Insufficient data for media.")
-
+        print(params)
         return self._invoke(MediaEnum.STORE_MEDIA_FILE.value, **params)
 
     def retrive_media_file(self, file_name):
@@ -163,9 +163,10 @@ class AnkiConnector:
         img = Image.open(image_src)
         img = img.convert("RGB")
         img = img.resize((224, 244))
+        img.show()
         buffered = BytesIO()
         img.save(buffered, format="JPEG")
-        return "data:image/jpeg;base64,"+base64.b64encode(buffered.getvalue()).decode()
+        return base64.b64encode(buffered.getvalue()).decode()
 
         # if __name__ == "__main__":
         #     c = AnkiConnector()
@@ -190,8 +191,9 @@ class AnkiConnector:
         #     res = c._invoke(NoteEnum.ADD_NOTE.value, **params)
         #     print(res)
 
-        # if __name__ == '__main__':
-        # ac = AnkiConnector()
-        # res = ac.store_media_file(
-        #     'fall_test.ogg', url='https://www.oxfordlearnersdictionaries.com/media/english/uk_pron_ogg/f/fal/fall_/fall__gb_2.ogg')
-        # print(res)
+
+if __name__ == '__main__':
+    ac = AnkiConnector()
+    res = ac.store_media_file(
+        'fall_test.ogg', url='https://www.oxfordlearnersdictionaries.com/media/english/uk_pron_ogg/f/fal/fall_/fall__gb_2.ogg')
+    print(res)

@@ -97,11 +97,29 @@ class App:
 
     def get_definitions(self):
         if not self.definitions:
+            print(len(self.word_info["definitions"]))
+            # pretty_print_dict(self.word_info["definitions"])
             entry = self.word_info["definitions"]
             self.definitions = list(map(
                 lambda x: x["definitions"][0]["description"],
                 entry))
         return self.definitions
+
+    def get_ipa(self):
+        pronun = self.get_current_pronunciation()
+        if 'ipa' in pronun:
+            return pronun['ipa']
+        return None
+
+    def get_current_deck_name(self):
+        if self.anki_deck_names:
+            return self.anki_deck_names[self.anki_deck_name_index]
+        return None
+
+    def get_current_model_name(self):
+        if self.anki_model_names:
+            return self.anki_model_names[self.anki_model_name_index]
+        return None
 
     def print_property(self, prop):
         print_dict_option = {
@@ -194,7 +212,7 @@ class App:
         self.word = oxford.Word.name()
 
     def print_UI(self):
-        self.clear()
+        # self.clear()
         print('Welcome to AnkiWord!')
         print()
         print('Your word: "{}"'.format(self.word.capitalize()))
@@ -252,7 +270,8 @@ class App:
         if not self.image_array:
             socket.setdefaulttimeout(2)
             img_fetcher = BingImageFetcher()
-            img_array = img_fetcher.download_from_word(self.word)
+            img_array = img_fetcher.download_from_word(
+                self.word, limit=100, threads=20)
             print('Download finished.')
             print('Opening window to choose image...')
             socket.setdefaulttimeout(None)
@@ -266,6 +285,25 @@ class App:
         names = mdls.keys()
         for i in range(len(names)):
             print('{0}. {1}'.format(i+1, names[i]))
+
+    def handle_media(self):
+        img_filename = audio_filename = None
+        if self.image_url:
+            img_filename = '_'+self.image_url.split('/')[-1]
+            base64_img = self.anki_connector.convert_image_to_base64(
+                self.image_url)
+            print('Uploading picture to storage...')
+            print(self.anki_connector.store_media_file(
+                img_filename, data=base64_img))
+
+        if self.get_current_pronunciation():
+            sound_url = self.get_current_pronunciation()["url"]
+            audio_filename = '_' + sound_url.split('/')[-1]
+            print('Uploading audio to storage...')
+            print(self.anki_connector.store_media_file(
+                audio_filename, url=sound_url))
+
+        return img_filename, audio_filename
 
     def print_anki(self):
         self.clear()
@@ -284,29 +322,16 @@ class App:
             self.pick_property(action, n)
             self.print_anki()
         elif action == "uld":
-
-            if self.image_url:
-                img_filename = '_'+self.image_url.split('/')[-1]
-                base64_img = self.anki_connector.convert_image_to_base64(
-                    self.image_url)
-                print('Uploading picture to storage...')
-                print(self.anki_connector.store_media_file(
-                    img_filename, data=base64_img))
-
-            if self.get_current_pronunciation():
-                sound_url = self.get_current_pronunciation()["url"]
-                audio_filename = '_' + sound_url.split('/')[-1]
-                print('Uploading audio to storage...')
-                print(self.anki_connector.store_media_file(
-                    audio_filename, sound_url))
-
+            img_filename, audio_filename = self.handle_media()
             note = PictureWordModel(self.word, self.get_current_definition(
-            ), self.get_current_pronunciation(), audio_filename, img_filename)
-            print(self.anki_connector.add_note(
-                self.anki_deck_names[self.anki_deck_name_index],
-                self.anki_deck_names[self.anki_model_name_index],
-                note.get_fields()))
-            input()
+            ), self.get_ipa(), audio_filename, img_filename)
+            self.anki_connector.add_note(
+                self.get_current_deck_name(),
+                self.get_current_model_name(),
+                note.get_fields())
+            print('Finished, your note has been uploaded.')
+            # TODO: Delete image folder
+            self.stop()
 
         else:
             self.print_UI()
